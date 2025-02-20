@@ -47,6 +47,7 @@ const Login = () => {
                     <Input 
                     icon={<Icon name='mail' size={26} strokeWidth={1.6}/>}
                     placeholder='Email'
+                    keyboardType='email-address'
                     value={email}
                     autoCapitalize='none'
                     onChangeText={text => setEmail(text)}

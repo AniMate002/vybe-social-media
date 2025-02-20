@@ -1,9 +1,13 @@
-import { SplashScreen, Stack } from "expo-router";
+import { router, SplashScreen, Stack } from "expo-router";
 import { useFonts } from "expo-font";
-
-// Import your global CSS file
-import "./global.css";
 import { useEffect } from "react";
+
+// Import global CSS
+import "./global.css";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabase";
+import { getUserData } from "@/services/userService";
+import { IUser } from "@/types/types";
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -16,15 +20,47 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if(!fontsLoaded){
-      SplashScreen.hideAsync()
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
     }
-  }, [fontsLoaded])
+  }, [fontsLoaded]);
 
-  if(!fontsLoaded) return null
+  if (!fontsLoaded) return null;
 
   return (
-      <Stack screenOptions={{headerShown: false}}/>
-
+    <AuthProvider>
+      <AuthenticatedLayout />
+    </AuthProvider>
   );
 }
+
+const AuthenticatedLayout = () => {
+  const { setAuth, setUserData } = useAuth();
+
+  const updateUser = async (userId: string) => {
+    const res = await getUserData(userId)
+    if(res.success)
+      setUserData?.(res.data)
+    console.log("Got user data: ", res.data)
+  }
+
+  useEffect(() => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        console.log("SESSION USER: ", session.user);
+        setAuth?.(session.user as IUser);
+        updateUser(session.user.id)
+        router.replace("/home")
+      }else{
+        console.log("UNAUTHENTICATED")
+        router.replace("/welcome")
+      }
+    });
+
+    return () => {
+      authListener?.subscription.unsubscribe();
+    };
+  }, []);
+
+  return <Stack screenOptions={{ headerShown: false }}/>;
+};

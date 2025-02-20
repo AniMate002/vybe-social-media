@@ -16,7 +16,7 @@ const Input:React.FC<IInput> = ({containerStyles, icon, ...props}) => {
             }
             <TextInput 
             placeholder='Email'
-            className='placeholder:text-black-100 text-black-100 flex-1 p-6' 
+            className='placeholder:text-black-100 text-black-300 font-medium flex-1 p-6' 
             {...props}
              />
         </View>
