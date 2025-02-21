@@ -22,7 +22,7 @@ const Button:React.FC<IButton> = ({hasShadow=false, isLoading=false, onPress, bu
         <TouchableOpacity 
         disabled={isLoading}
         style={hasShadow && shadowStyle}
-        onPress={onPress} className={"mx-3 bg-primary h-16 justify-center flex items-center rounded-3xl " + buttonStyle}>
+        onPress={onPress} className={" bg-primary h-16 justify-center flex items-center rounded-3xl " + buttonStyle}>
             <Text 
             disabled={isLoading} 
             className={"text-lg text-white font-rubik-medium " + textStyle}
