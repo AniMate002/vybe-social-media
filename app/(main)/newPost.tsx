@@ -39,7 +39,6 @@ const NewPost = () => {
                 return
             }
             setIsLoading(true)
-            console.log("BODY: ", bodyRef.current)
             const res = await createPost({userId: user.id, imageURI: image?.uri, text: bodyRef.current})
 
             setIsLoading(false)

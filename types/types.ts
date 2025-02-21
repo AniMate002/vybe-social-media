@@ -8,3 +8,11 @@ export interface IUser extends User {
     name: string;
     phoneNumber: string | null;
 }
+
+export interface IPost {
+    id: string;
+    created_ar: Date;
+    body?: string;
+    file?: string;
+    user: IUser;
+}

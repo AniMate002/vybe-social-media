@@ -84,6 +84,6 @@ export const getUserAvatar = (image?: string | null, name?: string) => {
     }
 }
 
-const getSupaBaseFileURL = (image: string) => {
+export const getSupaBaseFileURL = (image: string) => {
     if(image) return `https://rpeojlbsxrgjrxbcxhhf.supabase.co/storage/v1/object/public/uploads/${image}`
 }

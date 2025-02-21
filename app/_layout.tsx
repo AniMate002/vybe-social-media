@@ -8,6 +8,9 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { getUserData } from "@/services/userService";
 import { IUser } from "@/types/types";
+import { LogBox } from "react-native";
+
+LogBox.ignoreLogs(['Warning: TNodeChildrenRenderer', 'Warning: MemoizedTNodeRenderer', 'Warning: TRenderEngineProvider'])
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
