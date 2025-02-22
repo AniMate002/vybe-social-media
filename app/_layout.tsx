@@ -65,5 +65,9 @@ const AuthenticatedLayout = () => {
     };
   }, []);
 
-  return <Stack screenOptions={{ headerShown: false }}/>;
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(main)/postDetails" options={{presentation: "modal"}}/>
+    </Stack>
+  )
 };

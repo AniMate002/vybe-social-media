@@ -1,16 +1,24 @@
 import Icon from '@/assets/icons'
 import Avatar from '@/components/Avatar'
 import Header from '@/components/Header'
+import PostCard from '@/components/PostCard'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
-import { IUser } from '@/types/types'
+import { getUserPosts } from '@/services/postService'
+import { IPost, IUser } from '@/types/types'
+import { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { Redirect, router } from 'expo-router'
-import React from 'react'
-import { Alert, StatusBar, TouchableOpacity } from 'react-native'
+import React, { useEffect, useState } from 'react'
+import { Alert, FlatList, StatusBar, TouchableOpacity } from 'react-native'
 import { View, Text, SafeAreaView } from 'react-native'
 
 const Profile = () => {
     const { user, setAuth } = useAuth()
+    if(!user) return <Redirect href={"/welcome"}/>
+
+
+    const [posts, setPosts] = useState<Array<IPost>>([])
+    const [isLoading, setIsLoading] = useState<boolean>(true)
 
     const handleLogout = () => {
         Alert.alert("Confirm", "Are you sure you want to log out?", [
@@ -39,12 +47,75 @@ const Profile = () => {
         ])
     }
 
-    if(!user)
-        return <Redirect href={"/welcome"}/>
+    const fetchUserPosts = async () => {
+        setIsLoading(true)
+        const res = await getUserPosts(user.id)
+        if(!res.success){
+            Alert.alert("Error while fetching user posts", res.message)
+            return
+        }
+        setPosts(res.data as unknown as Array<IPost>)
+        setIsLoading(false)
+    }
+
+    const handlePostChannel = (payload: RealtimePostgresChangesPayload<{[key: string]: any}>) => {
+        console.log("CHANNEL POST: ", payload)
+        if(payload.errors){
+            console.log("CHANNEL POST EROR: ", payload.errors)
+            Alert.alert("Error fetching posts", JSON.stringify(payload.errors))
+            return
+        }else{
+            if(payload.eventType === "INSERT"){
+                const newPost = {...payload.new, user, likes: [], comments: [{count: 0}]} as unknown as IPost
+                console.log("NEW POST AFTER INSERTING USER: ", newPost)
+                setPosts([newPost, ...posts])
+            }
+        }
+    }
+
+    useEffect(() => {
+        // SUBSCRIBING TO LISTENING EVENT: MANAGING POSTS IN REAL TIME
+        let postChannel = supabase
+        .channel("posts")
+        .on("postgres_changes", {event: "*", schema: "public", table: "posts"}, payload => handlePostChannel(payload))
+        .subscribe()
+
+        // FETCHING USER POSTS
+        fetchUserPosts()
+
+
+        // UNSUBSCRIBING TO CHANNEL
+        return () => {
+            supabase.removeChannel(postChannel)
+        }
+
+    }, [])
+
     return (
         <View className='px-4 bg-white w-full h-full'>
-            <SafeAreaView />
-            <UserHeader user={user} handleLogout={handleLogout}/>
+            {/* <SafeAreaView /> */}
+            
+
+            {/* USER POSTS */}
+            <FlatList 
+                data={posts}
+                contentContainerClassName='px-4 mt-10 flex w-full flex-col gap-4'
+                keyExtractor={(item) => item.id}
+                renderItem={({item}) => <PostCard 
+                    currentUser={user}
+                    post={item}
+                />}
+                ListHeaderComponentClassName='mt-4'
+                ListHeaderComponent={
+                    <>
+                        {/* HEADER */}
+                        <UserHeader user={user} handleLogout={handleLogout}/>
+                    </>
+                }
+                ListFooterComponent={
+                    <Text className='text-center pt-10 pb-14 font-semibold text-black-100'>You have reached the end</Text>
+                }
+            />
         </View>
     )
 }

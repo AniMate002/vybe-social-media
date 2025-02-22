@@ -11,8 +11,24 @@ export interface IUser extends User {
 
 export interface IPost {
     id: string;
-    created_ar: Date;
+    created_at: Date;
     body?: string;
     file?: string;
     user: IUser;
+    likes: Array<IPostLikes>;
+    comments: [{count: number}]
+}
+
+export interface IPostLikes {
+    id: string;
+    userId: string;
+    postId: string;
+}
+
+export interface IComment {
+    id: string;
+    created_at: string;
+    text: string;
+    user: IUser;
+    postId: string;
 }

@@ -46,7 +46,7 @@ const icons = {
     video: Video,
 }
 
-const Icon = ({name, size, strokeWidth, color, ...props}: {name: keyof typeof icons, size?: number, color?: string, strokeWidth?: number, props?: any}) => {
+const Icon = ({name, size, strokeWidth, color, fill="none", ...props}: {name: keyof typeof icons, size?: number, color?: string, strokeWidth?: number, fill?: string, props?: any}) => {
     const IconComponent = icons[name];
   return (
     <IconComponent
@@ -54,6 +54,7 @@ const Icon = ({name, size, strokeWidth, color, ...props}: {name: keyof typeof ic
         width={size || 24}
         strokeWidth={strokeWidth || 1.9}
         color={color || "#7C7C7C"}
+        fill={fill}
         {...props}
     />
   )

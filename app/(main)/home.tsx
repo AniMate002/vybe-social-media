@@ -4,10 +4,12 @@ import PostCard from '@/components/PostCard'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { getPosts } from '@/services/postService'
-import { IPost } from '@/types/types'
+import { getUserData } from '@/services/userService'
+import { IPost, IUser } from '@/types/types'
+import { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { Redirect, router } from 'expo-router'
 import React, { useEffect, useState } from 'react'
-import { View, Text, Alert, SafeAreaView, Button, TouchableOpacity, Pressable, FlatList } from 'react-native'
+import { View, Text, Alert, SafeAreaView, Button, TouchableOpacity, Pressable, FlatList, ActivityIndicator } from 'react-native'
 
 const Home = () => {
     const { setAuth, user } = useAuth()
@@ -22,17 +24,54 @@ const Home = () => {
 
     const [posts, setPosts] = useState<Array<IPost>>([])
     const [limit, setLimit] = useState<number>(10)
+    const [reachedEnd, setReachedEnd] = useState<boolean>(false)
 
-    useEffect(() => {
+    const handlePostChannel = async (payload: RealtimePostgresChangesPayload<{[key: string]: any}>) => {
+        console.log("CHANNEL POST: ", payload)
+        if(payload.errors){
+            console.log("CHANNEL POST EROR: ", payload.errors)
+            Alert.alert("Error fetching posts", JSON.stringify(payload.errors))
+            return
+        }else{
+            if(payload.eventType === "INSERT"){
+                const res = await getUserData(payload.new.userId)
+                if(!res.success){
+                    Alert.alert("Error getting user data", res.message)
+                    return
+                }
+                const newPost = {...payload.new, user: res.data, likes: [], comments: [{count: 0}]} as unknown as IPost
+                console.log("NEW POST AFTER INSERTING USER: ", newPost)
+                setPosts([newPost, ...posts])
+            }
+        }
+    }
+
+    const fetchPosts = () => {
+        // FETCHING POSTS
         getPosts(limit).then(({success, data, message}) => {
             if(!success){
                 Alert.alert("Error fetching posts", message)
             }
             if(data){
+                if(posts.length === data.length) setReachedEnd(true)
                 setPosts(data)
                 setLimit(prev => prev + 10)
+
             }
         })
+    }
+
+    useEffect(() => {
+        // SUBSCRIBING TO LISTENING EVENT: MANAGING POSTS IN REAL TIME
+        let postChannel = supabase
+        .channel("posts")
+        .on("postgres_changes", {event: "*", schema: "public", table: "posts"}, payload => handlePostChannel(payload))
+        .subscribe()
+
+        // UNSUBSCRIBING TO CHANNEL
+        return () => {
+            supabase.removeChannel(postChannel)
+        }
     }, [])
 
     return (
@@ -61,11 +100,22 @@ const Home = () => {
                 data={posts}
                 contentContainerClassName='px-4 mt-10 flex w-full flex-col gap-4'
                 keyExtractor={(item) => item.id}
+                onEndReached={() => {
+                    fetchPosts()
+                }}
                 renderItem={({item}) => <PostCard 
                     currentUser={user}
                     post={item}
                 />}
+                ListFooterComponent={
+                    reachedEnd ?
+                    <Text className='text-center pt-10 pb-14 font-semibold text-black-100'>You have reached the end</Text>
+                    :
+                    <ActivityIndicator className='pt-10 pb-14' size={'large'} color={"#41B287"}/>
+                }
             />
+
+            
         </View>
     )
 }
