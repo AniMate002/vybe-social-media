@@ -42,6 +42,10 @@ const Home = () => {
                 const newPost = {...payload.new, user: res.data, likes: [], comments: [{count: 0}]} as unknown as IPost
                 console.log("NEW POST AFTER INSERTING USER: ", newPost)
                 setPosts([newPost, ...posts])
+            }else if(payload.eventType === "DELETE"){
+                console.log("POST DELETED CHANNEL home: ", payload)
+                setPosts(prevPosts => prevPosts.filter(post => post.id !== payload.old.id))
+                console.log("POSTS UPDATED AFTER DELETING home")
             }
         }
     }

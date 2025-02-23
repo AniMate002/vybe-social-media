@@ -69,6 +69,10 @@ const Profile = () => {
                 const newPost = {...payload.new, user, likes: [], comments: [{count: 0}]} as unknown as IPost
                 console.log("NEW POST AFTER INSERTING USER: ", newPost)
                 setPosts([newPost, ...posts])
+            }else if(payload.eventType === "DELETE"){
+                console.log("POST DELETED CHANNEL profile: ", payload)
+                setPosts(prevPosts => prevPosts.filter(post => post.id !== payload.old.id))
+                console.log("POSTS UPDATED AFTER DELETING profile", posts)
             }
         }
     }
@@ -99,7 +103,7 @@ const Profile = () => {
             {/* USER POSTS */}
             <FlatList 
                 data={posts}
-                contentContainerClassName='px-4 mt-10 flex w-full flex-col gap-4'
+                contentContainerClassName=' mt-10 flex w-full flex-col gap-4'
                 keyExtractor={(item) => item.id}
                 renderItem={({item}) => <PostCard 
                     currentUser={user}

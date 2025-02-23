@@ -5,8 +5,9 @@ import Avatar from './Avatar';
 import Icon from '@/assets/icons';
 import RenderHtml from "react-native-render-html"
 import { getSupaBaseFileURL } from '@/services/userService';
-import { createPostLike, removePostLike } from '@/services/postService';
+import { createPostLike, deletePost, removePostLike } from '@/services/postService';
 import { router } from 'expo-router';
+import { createNotification } from '@/services/notificationService';
 
 interface IPostCard {
     currentUser: IUser;
@@ -33,6 +34,13 @@ const PostCard:React.FC<IPostCard> = ({ currentUser, post, showShadow = true, sh
     };
 
     // console.log("HOW DO YOU SEE: ", post)
+    const sendNotification = async (title: "liked your post" | "commented on your post") => {
+        const res = await createNotification({title, senderId: currentUser.id, receiverId: post.user.id, data: post.id})
+        if(!res.success){
+            Alert.alert("Error while creating notification", res.message)
+            return;
+        }
+    }
 
     const handleLikeClick = async () => {
         if(!isLiked){
@@ -44,6 +52,8 @@ const PostCard:React.FC<IPostCard> = ({ currentUser, post, showShadow = true, sh
                 setLikes(prev => prev - 1)
                 setIsLiked(prev => !prev)
                 return
+            }else{
+                sendNotification("liked your post")
             }
         }else{
             setLikes(prev => prev - 1)
@@ -69,6 +79,25 @@ const PostCard:React.FC<IPostCard> = ({ currentUser, post, showShadow = true, sh
         if(showMenu) router.push({ pathname: "/(main)/postDetails", params: {postId: post.id}})
     }
 
+    const handleDeletePost = () => {
+        Alert.alert("Warning", "Are you sure you want to delete this post?", [
+            {
+                text: "Cancel",
+                style: "cancel"
+            },
+            {
+                text: "Delete",
+                style: "destructive",
+                onPress: async () => {
+                    const res = await deletePost(post.id)
+                    if(!res.success){
+                        Alert.alert("Error while deleting post", res.message)
+                    }
+                    router.back()
+                } 
+            }
+        ])
+    }
     
     return (
         <View style={showShadow ? shadowStyles : {}} className='border-2 border-slate-100 p-4 rounded-3xl w-full'>
@@ -88,6 +117,17 @@ const PostCard:React.FC<IPostCard> = ({ currentUser, post, showShadow = true, sh
                     <TouchableOpacity className='ml-auto' onPress={handleOpenPostDetailsModal}>
                         <Icon name='threeDotsHorizontal' strokeWidth={3}/>
                     </TouchableOpacity>
+                    :
+                    currentUser.id === post.user.id
+                    ?
+                    <View className='flex items-center justify-end gap-2 flex-row ml-auto'>
+                        <TouchableOpacity>
+                            <Icon name='edit'/>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={handleDeletePost}>
+                            <Icon name='delete' color='#ff2e2e'/>
+                        </TouchableOpacity>
+                    </View>
                     :
                     ""
                 }

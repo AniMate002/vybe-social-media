@@ -3,6 +3,7 @@ import CommentItem from '@/components/CommentItem'
 import PostCard from '@/components/PostCard'
 import { useAuth } from '@/context/AuthContext'
 import { createComment, getPostComments } from '@/services/commentService'
+import { createNotification } from '@/services/notificationService'
 import { getPostDetails } from '@/services/postService'
 import { IComment, IPost } from '@/types/types'
 import { Redirect, useLocalSearchParams } from 'expo-router'
@@ -18,27 +19,39 @@ const PostDetails = () => {
     const [isLoading, setIsLoading] = useState<boolean>(true)
     const [isLoadingComments, setIsLoadingComments] = useState<boolean>(false)
     const [commentBody, setCommentBody] = useState<string>("")
+    const [isError, setIsError] = useState<boolean>(false)
 
     const fetchPostDetails = async () => {
         setIsLoading(true)
         const userId = Array.isArray(postId) ? postId[0] : postId
         const res = await getPostDetails(userId)
         if(!res.success){
-            Alert.alert("Error while fetching post derails: ", res.message)
+            Alert.alert("Error while fetching post details: ", res.message)
+            setIsError(true)
             return
         }
         const resComments = await getPostComments(userId)
         if(!resComments.success){
             Alert.alert("Error while fetching post comments: ", resComments.message)
+            setIsError(true)
             return
         }
         setPost(res.data as unknown as IPost)
         setComments(resComments.data as unknown as Array<IComment>)
+        setIsError(false)
         setIsLoading(false)
     }
     useEffect(() => {
         fetchPostDetails()
     }, [])
+
+    const sendNotification = async (title: "liked your post" | "commented on your post") => {
+        const res = await createNotification({title, senderId: user.id, receiverId: post?.user.id || "", data: post?.id || ""})
+        if(!res.success){
+            Alert.alert("Error while creating notification", res.message)
+            return;
+        }
+    }
 
     const handleCreateComment = async () => {
         if(post && user && commentBody)
@@ -48,12 +61,24 @@ const PostDetails = () => {
 
             if(!res.success){
                 Alert.alert("Error while creating comment", res.message)
+                setIsError(true)
                 return
+            }else{
+                sendNotification("commented on your post")
             }
             setComments([{...res.data, user}, ...comments])
             setCommentBody("")
+            setIsError(false)
             setIsLoadingComments(false)
         }
+    }
+
+    if(isError){
+        return (
+            <View className='w-full h-full items-center justify-center'>
+                <Text className='text-center text-2xl font-rubik-medium text-black-200'>This post doesn't exist: 404</Text>
+            </View>
+        )
     }
 
     if(isLoading || !post){

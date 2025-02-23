@@ -144,3 +144,23 @@ export const getUserPosts = async (userId: string) => {
         return {success: false, message: error instanceof Error ? error.message : "Unknown error while fetching users posts"}
     }
 }
+
+export const deletePost = async (postId: string) => {
+    try {
+        const { error } = await supabase
+        .from("posts")
+        .delete()
+        .eq("id", postId)
+
+        if(error){
+            console.log("Error while deleting post: " , error.message)
+            return { success: false, message: error.message}
+        }
+
+        console.log("POST DELETED")
+        return { success: true }
+    } catch (error) {
+        console.log("Error while deleting post (postService)")
+        return {success: false, message: error instanceof Error ? error.message : "Unknown error while deleting post"} 
+    }
+}

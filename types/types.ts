@@ -32,3 +32,13 @@ export interface IComment {
     user: IUser;
     postId: string;
 }
+
+export interface INotification {
+    id?: string;
+    title: "liked your post" | "commented on your post";
+    sender?: IUser;
+    senderId: string;
+    receiverId: string;
+    data: string;
+    checked?: boolean;
+}
